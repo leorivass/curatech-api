@@ -4,7 +4,7 @@ from sqlalchemy import select
 from datetime import datetime
 
 from database import Base, engine, get_db
-from models import User  # tus modelos
+from models import User 
 from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic
 from security import hash_password, verify_password, create_access_token
 
@@ -23,28 +23,28 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         patient_health_condition=payload.patient_health_condition,
         caregiver_name=payload.caregiver_name,
         email=payload.email,
-        password_hash=hash_password(payload.password),
-        created_at=datetime.utcnow(), 
+        password_hash=payload.password,
+        created_at=datetime.now(), 
     )
-
+ 
     db.add(user)
     db.commit()
     db.refresh(user)
 
     return UserPublic(
-        id_user=user.id_user,
-        patient_first_name=user.patient_first_name,
-        patient_last_name=user.patient_last_name,
-        email=user.email,
+        id_user=str(user.id_user),
+        patient_first_name = user.patient_first_name,
+        patient_last_name = user.patient_last_name,
+        patient_birth_date = user.patient_birth_date,
+        patient_health_condition = user.patient_health_condition,            
+        caregiver_name = user.caregiver_name,
+        email = user.email
     )
 
 @app.post("/auth/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
+    user = db.execute(select(User).where(User.email == payload.email, User.password_hash == payload.password)).scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
-
-    if not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
 
     token = create_access_token(subject=str(user.id_user))
@@ -52,9 +52,12 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     return TokenResponse(
         access_token=token,
         user=UserPublic(
-            id_user=user.id_user,
-            patient_first_name=user.patient_first_name,
-            patient_last_name=user.patient_last_name,
-            email=user.email,
+            id_user=str(user.id_user),
+            patient_first_name = user.patient_first_name,
+            patient_last_name = user.patient_last_name,
+            patient_birth_date = user.patient_birth_date,
+            patient_health_condition = user.patient_health_condition,
+            caregiver_name = user.caregiver_name,
+            email = user.email
         ),
     )

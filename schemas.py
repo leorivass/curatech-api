@@ -16,9 +16,12 @@ class LoginRequest(BaseModel):
     password: str
 
 class UserPublic(BaseModel):
-    id_user: int
+    id_user: str
     patient_first_name: str
     patient_last_name: str
+    patient_birth_date: datetime
+    patient_health_condition: Optional[str] = None
+    caregiver_name: Optional[str] = None
     email: EmailStr
 
 class TokenResponse(BaseModel):

@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from database import Base
 
 class User(Base):
-    __tablename__ = 'user'
+    __tablename__ = 'users'
     
     id_user = Column(Integer, primary_key=True)
     patient_first_name = Column(String, nullable=False)
@@ -15,7 +15,7 @@ class User(Base):
     created_at = Column(DateTime, nullable=False)
     
 class Device(Base):
-    __tablename__ = 'device'
+    __tablename__ = 'devices'
     
     id_device = Column(Integer, primary_key=True)
     serial_number = Column(String, unique=True, nullable=False)
@@ -24,10 +24,12 @@ class Device(Base):
     id_user = Column(Integer, ForeignKey('user.id_user', ondelete='CASCADE'), nullable=False)
     
 class Module(Base):
-    __tablename__ = 'module'
+    __tablename__ = 'modules'
     
     id_module = Column(Integer, primary_key=True)
     pill_name = Column(String, nullable=False)
+    dosage = Column(String)
     dose_times = Column(String, nullable=False)
     daily_qty = Column(Integer, nullable=False)
+    notes = Column(String)
     id_device = Column(Integer, ForeignKey('device.id_device', ondelete='CASCADE'), nullable=False)

@@ -5,7 +5,7 @@ from datetime import datetime
 
 from database import Base, engine, get_db
 from models import User, Module, Device
-from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected
+from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData
 from security import hash_password, verify_password, create_access_token
 
 import time
@@ -65,7 +65,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     )
 
 @app.get("/detect/module", response_model=ModuleDetected)
-def login(status: str, id_device: int, db: Session = Depends(get_db)):
+def detect_module(status: str, id_device: int, db: Session = Depends(get_db)):
     timeout = 20
     start = time.time()
 
@@ -85,3 +85,29 @@ def login(status: str, id_device: int, db: Session = Depends(get_db)):
     return ModuleDetected(
         servo_id=module.servo_id
     )
+
+@app.patch("/update/module/{servo_id}")
+def update_module_data(servo_id: int, payload: UpdateModuleData, db: Session = Depends(get_db)):
+    module = db.execute(select(Module).where(Module.servo_id == servo_id).scalar_one_or_none())
+
+    if not module:
+        raise HTTPException(status_code=status.HTTP_404_UNAUTHORIZED, detail="Module with this servo_id not found")
+    
+    if module.pill_name is not None:
+        module.pill_name = payload.pill_name
+    if module.dosage is not None:
+        module.dosage = payload.dosage
+    if module.dose_times is not None:
+        module.dose_times = payload.dosage
+    if module.daily_qty is not None:
+        module.daily_qty = payload.daily_qty
+    if module.notes is not None:
+        module.notes = payload.notes
+    if module.status is not None:
+        module.status = "TAKEN"
+
+    db.commit()
+    db.refresh(module)
+    
+    return 0
+

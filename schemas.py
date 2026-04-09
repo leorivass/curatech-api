@@ -36,3 +36,11 @@ class TokenResponse(BaseModel):
 class ModuleDetected(BaseModel):
     servo_id: int
 
+class UpdateModuleData(BaseModel):
+    pill_name: str
+    dosage: str
+    dose_times: list
+    daily_qty: int
+    notes: str
+    
+

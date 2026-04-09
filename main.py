@@ -4,9 +4,11 @@ from sqlalchemy import select
 from datetime import datetime
 
 from database import Base, engine, get_db
-from models import User 
-from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic
+from models import User, Module, Device
+from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected
 from security import hash_password, verify_password, create_access_token
+
+import time
 
 app = FastAPI()
 
@@ -60,4 +62,26 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             caregiver_name = user.caregiver_name,
             email = user.email
         ),
+    )
+
+@app.get("/detect/module", response_model=ModuleDetected)
+def login(status: str, id_device: int, db: Session = Depends(get_db)):
+    timeout = 20
+    start = time.time()
+
+    module = None
+
+    while not module:
+        module = db.execute(select(Module).where(Module.status == status, Module.id_device == id_device)).scalar_one_or_none()
+
+        if module:
+            break
+
+        if time.time() - start > timeout:
+            raise HTTPException(status_code=404, detail="Module not found")
+
+        time.sleep(1)
+
+    return ModuleDetected(
+        servo_id=module.servo_id
     )

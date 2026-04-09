@@ -27,9 +27,11 @@ class Module(Base):
     __tablename__ = 'modules'
     
     id_module = Column(Integer, primary_key=True)
+    servo_id = Column(Integer, nullable=False)
     pill_name = Column(String, nullable=False)
     dosage = Column(String)
     dose_times = Column(String, nullable=False)
     daily_qty = Column(Integer, nullable=False)
     notes = Column(String)
+    status = Column(String, nullable=False)
     id_device = Column(Integer, ForeignKey('device.id_device', ondelete='CASCADE'), nullable=False)

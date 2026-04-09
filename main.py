@@ -88,21 +88,28 @@ def detect_module(status: str, id_device: int, db: Session = Depends(get_db)):
 
 @app.patch("/update/module/{servo_id}")
 def update_module_data(servo_id: int, payload: UpdateModuleData, db: Session = Depends(get_db)):
-    module = db.execute(select(Module).where(Module.servo_id == servo_id).scalar_one_or_none())
+    module = db.execute(select(Module).where(Module.servo_id == servo_id)).scalar_one_or_none()
 
     if not module:
-        raise HTTPException(status_code=status.HTTP_404_UNAUTHORIZED, detail="Module with this servo_id not found")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Module with this servo_id not found")
     
     if module.pill_name is not None:
         module.pill_name = payload.pill_name
+
     if module.dosage is not None:
         module.dosage = payload.dosage
+
     if module.dose_times is not None:
-        module.dose_times = payload.dosage
+        module.dose_times = payload.dose_times
+
     if module.daily_qty is not None:
+        if payload.daily_qty < 1:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Daily quantity must be greater than 0")
         module.daily_qty = payload.daily_qty
+
     if module.notes is not None:
         module.notes = payload.notes
+
     if module.status is not None:
         module.status = "TAKEN"
 

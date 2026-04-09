@@ -42,5 +42,12 @@ class UpdateModuleData(BaseModel):
     dose_times: list
     daily_qty: int
     notes: str
+
+class PairDeviceWithUser(BaseModel):
+    serial_number: str
+    id_user: str
+
+class DevicePaired(BaseModel):
+    id_device: str
     
 

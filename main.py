@@ -5,7 +5,7 @@ from datetime import datetime
 
 from database import Base, engine, get_db
 from models import User, Module, Device
-from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData
+from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData, PairDeviceWithUser, DevicePaired
 from security import hash_password, verify_password, create_access_token
 
 import time
@@ -16,7 +16,7 @@ app = FastAPI()
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     existing = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
     if existing:
-        raise HTTPException(status_code=409, detail="Email ya registrado")
+        raise HTTPException(status_code=409, detail="This user is already registered")
 
     user = User(
         patient_first_name=payload.patient_first_name,
@@ -47,7 +47,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.execute(select(User).where(User.email == payload.email, User.password_hash == payload.password)).scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Credentials")
 
     token = create_access_token(subject=str(user.id_user))
 
@@ -64,7 +64,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         ),
     )
 
-@app.get("/detect/module", response_model=ModuleDetected)
+@app.get("/module/detect", response_model=ModuleDetected)
 def detect_module(status: str, id_device: int, db: Session = Depends(get_db)):
     timeout = 20
     start = time.time()
@@ -86,7 +86,7 @@ def detect_module(status: str, id_device: int, db: Session = Depends(get_db)):
         servo_id=module.servo_id
     )
 
-@app.patch("/update/module/{servo_id}")
+@app.patch("/module/update/{servo_id}")
 def update_module_data(servo_id: int, payload: UpdateModuleData, db: Session = Depends(get_db)):
     module = db.execute(select(Module).where(Module.servo_id == servo_id)).scalar_one_or_none()
 
@@ -117,4 +117,24 @@ def update_module_data(servo_id: int, payload: UpdateModuleData, db: Session = D
     db.refresh(module)
     
     return 0
+
+@app.post("/device/add", response_model=DevicePaired, status_code=201)
+def register(payload: PairDeviceWithUser, db: Session = Depends(get_db)):
+    existing = db.execute(select(Device).where(Device.serial_number == payload.serial_number)).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail="This device is already registered")
+
+    device = Device(
+        serial_number = payload.serial_number,
+        config_version = 0,
+        id_user = payload.id_user
+    )
+ 
+    db.add(device)
+    db.commit()
+    db.refresh(device)
+
+    return DevicePaired(
+        id_device=str(device.id_user)
+    )
 

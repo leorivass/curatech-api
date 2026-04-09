@@ -21,7 +21,7 @@ class Device(Base):
     serial_number = Column(String, unique=True, nullable=False)
     api_key_hash = Column(String, nullable=False)
     config_version = Column(Integer, nullable=False, default=0)
-    id_user = Column(Integer, ForeignKey('user.id_user', ondelete='CASCADE'), nullable=False)
+    id_user = Column(Integer, ForeignKey('users.id_user', ondelete='CASCADE'), nullable=False)
     
 class Module(Base):
     __tablename__ = 'modules'
@@ -34,4 +34,4 @@ class Module(Base):
     daily_qty = Column(Integer, nullable=False)
     notes = Column(String)
     status = Column(String, nullable=False)
-    id_device = Column(Integer, ForeignKey('device.id_device', ondelete='CASCADE'), nullable=False)
+    id_device = Column(Integer, ForeignKey('devices.id_device', ondelete='CASCADE'), nullable=False)

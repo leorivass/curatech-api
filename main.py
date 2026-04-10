@@ -65,7 +65,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     )
 
 @app.get("/module/detect", response_model=ModuleDetected)
-def detect_module(status: str, id_device: int, db: Session = Depends(get_db)):
+def detect_module(status: str, id_device: str, db: Session = Depends(get_db)):
     timeout = 20
     start = time.time()
 

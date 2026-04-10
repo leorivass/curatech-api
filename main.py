@@ -5,7 +5,7 @@ from datetime import datetime
 
 from database import Base, engine, get_db
 from models import User, Module, Device
-from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData, PairDeviceWithUser, DevicePaired
+from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData, PairDeviceWithUser, DevicePaired, ModulesResponse
 from security import hash_password, verify_password, create_access_token
 
 import time
@@ -86,37 +86,36 @@ def detect_module(status: str, id_device: int, db: Session = Depends(get_db)):
         servo_id=module.servo_id
     )
 
-@app.patch("/module/update/{servo_id}")
-def update_module_data(servo_id: int, payload: UpdateModuleData, db: Session = Depends(get_db)):
-    module = db.execute(select(Module).where(Module.servo_id == servo_id)).scalar_one_or_none()
+@app.patch("/module/update/{servo_id}/{id_device}", response_model=ModulesResponse)
+def update_module_data(servo_id: int, id_device: str, payload: UpdateModuleData, db: Session = Depends(get_db)):
+    module = db.execute(select(Module).where(Module.id_device == id_device, Module.servo_id == servo_id)).scalar_one_or_none()
 
     if not module:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Module with this servo_id not found")
-    
-    if module.pill_name is not None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not found for this device and servo_id")
+
+    if payload.pill_name is not None:
         module.pill_name = payload.pill_name
-
-    if module.dosage is not None:
+    if payload.dosage is not None:
         module.dosage = payload.dosage
-
-    if module.dose_times is not None:
+    if payload.dose_times is not None:
         module.dose_times = payload.dose_times
-
-    if module.daily_qty is not None:
+    if payload.daily_qty is not None:
         if payload.daily_qty < 1:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Daily quantity must be greater than 0")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="daily_qty must be >= 1")
         module.daily_qty = payload.daily_qty
-
-    if module.notes is not None:
+    if payload.notes is not None:
         module.notes = payload.notes
-
-    if module.status is not None:
-        module.status = "TAKEN"
+    if payload.status is not None:
+        module.status = payload.status
 
     db.commit()
-    db.refresh(module)
-    
-    return 0
+
+    modules = db.execute(select(Module).where(Module.id_device == id_device)).scalars().all()
+
+    return {
+        "ok": True, 
+        "modules": modules
+    }
 
 @app.post("/device/add", response_model=DevicePaired, status_code=201)
 def register(payload: PairDeviceWithUser, db: Session = Depends(get_db)):

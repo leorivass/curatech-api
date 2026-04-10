@@ -29,10 +29,6 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     user: UserPublic
 
-# class DetectModule(BaseModel):
-#     status: str
-#     id_device: str
-
 class ModuleDetected(BaseModel):
     servo_id: int
 

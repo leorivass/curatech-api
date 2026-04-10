@@ -117,23 +117,20 @@ def update_module_data(servo_id: int, id_device: str, payload: UpdateModuleData,
         "modules": modules
     }
 
-@app.post("/device/add", response_model=DevicePaired, status_code=201)
+@app.patch("/device/add", response_model=DevicePaired, status_code=201)
 def register(payload: PairDeviceWithUser, db: Session = Depends(get_db)):
-    existing = db.execute(select(Device).where(Device.serial_number == payload.serial_number)).scalar_one_or_none()
-    if existing:
-        raise HTTPException(status_code=409, detail="This device is already registered")
+    device = db.execute(select(Device).where(Device.serial_number == payload.serial_number, Device.id_user == None)).scalar_one_or_none()
+    if not device:
+        raise HTTPException(status_code=409, detail="This serial_number does not exist or is already paired with a user")
 
-    device = Device(
-        serial_number = payload.serial_number,
-        config_version = 0,
-        id_user = payload.id_user
-    )
+    if payload.id_user is not None:
+        device.id_user = payload.id_user
+
+    device.config_version = 0
  
-    db.add(device)
     db.commit()
-    db.refresh(device)
 
     return DevicePaired(
-        id_device=str(device.id_user)
+        id_device=str(device.id_device)
     )
 

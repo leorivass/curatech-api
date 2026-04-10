@@ -47,19 +47,19 @@ class DevicePaired(BaseModel):
     id_device: str
 
 class ModuleOut(BaseModel):
-    id_module: int
+    id_module: str
     servo_id: int
-    pill_name: str
+    pill_name: Optional[str] = None
     dosage: Optional[str] = None
-    dose_times: list[str]
-    daily_qty: int
+    dose_times: Optional[list] = []
+    daily_qty: Optional[int] = None
     notes: Optional[str] = None
+ 
     status: str
     id_device: str
 
 class ModulesResponse(BaseModel):
     ok: bool
-    modules: list[ModuleOut]
 
     
 

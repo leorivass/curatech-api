@@ -5,7 +5,7 @@ from datetime import datetime
 
 from database import Base, engine, get_db
 from models import User, Module, Device
-from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData, PairDeviceWithUser, DevicePaired, ModulesResponse
+from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData, PairDeviceWithUser, DevicePaired, ModulesResponse, ModuleOut
 from security import hash_password, verify_password, create_access_token
 
 import time
@@ -114,11 +114,10 @@ def update_module_data(servo_id: int, id_device: str, payload: UpdateModuleData,
 
     return {
         "ok": True, 
-        "modules": modules
     }
 
 @app.patch("/device/add", response_model=DevicePaired, status_code=201)
-def register(payload: PairDeviceWithUser, db: Session = Depends(get_db)):
+def add_device(payload: PairDeviceWithUser, db: Session = Depends(get_db)):
     device = db.execute(select(Device).where(Device.serial_number == payload.serial_number, Device.id_user == None)).scalar_one_or_none()
     if not device:
         raise HTTPException(status_code=409, detail="This serial_number does not exist or is already paired with a user")
@@ -133,4 +132,23 @@ def register(payload: PairDeviceWithUser, db: Session = Depends(get_db)):
     return DevicePaired(
         id_device=str(device.id_device)
     )
+
+@app.get("/module/get/{id_device}", response_model=list[ModuleOut])
+def get_all_modules(id_device: str, db: Session = Depends(get_db)):
+    modules = db.execute(select(Module).where(Module.id_device == id_device)).scalars().all()
+
+    if not modules:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No modules found for this device")
+
+    return [ModuleOut(
+        id_module=str(module.id_module),
+        servo_id=module.servo_id,
+        pill_name=module.pill_name,
+        dosage=module.dosage,
+        dose_times=module.dose_times,
+        daily_qty=module.daily_qty,
+        notes=module.notes,
+        status=module.status,
+        id_device=str(module.id_device)
+    ) for module in modules]
 

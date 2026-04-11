@@ -35,7 +35,7 @@ class ModuleDetected(BaseModel):
 class UpdateModuleData(BaseModel):
     pill_name: str
     dosage: str
-    dose_times: list
+    dose_times: list[str]
     daily_qty: int
     notes: str
     status: str

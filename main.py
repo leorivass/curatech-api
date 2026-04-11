@@ -1,16 +1,19 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from datetime import datetime
+from datetime import datetime, time as dt_time
 
 from database import Base, engine, get_db
 from models import User, Module, Device
 from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData, PairDeviceWithUser, DevicePaired, ModulesResponse, ModuleOut
 from security import hash_password, verify_password, create_access_token
 
-import time
+import time as py_time
 
 app = FastAPI()
+
+def parse_times(times: list[str]) -> list[dt_time]:
+    return [dt_time.fromisoformat(t) for t in times]
 
 @app.post("/auth/register", response_model=UserPublic, status_code=201)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
@@ -67,7 +70,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 @app.get("/module/detect", response_model=ModuleDetected)
 def detect_module(status: str, id_device: str, db: Session = Depends(get_db)):
     timeout = 20
-    start = time.time()
+    start = py_time.time()
 
     module = None
 
@@ -77,10 +80,10 @@ def detect_module(status: str, id_device: str, db: Session = Depends(get_db)):
         if module:
             break
 
-        if time.time() - start > timeout:
+        if py_time.time() - start > timeout:
             raise HTTPException(status_code=404, detail="Module not found")
 
-        time.sleep(1)
+        py_time.sleep(1)
 
     return ModuleDetected(
         servo_id=module.servo_id
@@ -98,7 +101,7 @@ def update_module_data(servo_id: int, id_device: str, payload: UpdateModuleData,
     if payload.dosage is not None:
         module.dosage = payload.dosage
     if payload.dose_times is not None:
-        module.dose_times = payload.dose_times
+        module.dose_times = parse_times(payload.dose_times)
     if payload.daily_qty is not None:
         if payload.daily_qty < 1:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="daily_qty must be >= 1")

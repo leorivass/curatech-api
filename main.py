@@ -110,8 +110,6 @@ def update_module_data(servo_id: int, id_device: str, payload: UpdateModuleData,
 
     db.commit()
 
-    modules = db.execute(select(Module).where(Module.id_device == id_device)).scalars().all()
-
     return {
         "ok": True, 
     }

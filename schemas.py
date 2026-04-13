@@ -62,5 +62,9 @@ class ModuleOut(BaseModel):
 class ModulesResponse(BaseModel):
     ok: bool
 
+class AddModule(BaseModel):
+    servo_id: int
+    serial_number: str
+
     
 

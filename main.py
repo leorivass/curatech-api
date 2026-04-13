@@ -5,7 +5,7 @@ from datetime import datetime, time as dt_time
 
 from database import Base, engine, get_db
 from models import User, Module, Device
-from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData, PairDeviceWithUser, DevicePaired, ModulesResponse, ModuleOut
+from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData, PairDeviceWithUser, DevicePaired, ModulesResponse, ModuleOut, AddModule
 from security import hash_password, verify_password, create_access_token
 
 import time as py_time
@@ -152,4 +152,30 @@ def get_all_modules(id_device: str, db: Session = Depends(get_db)):
         status=module.status,
         id_device=str(module.id_device)
     ) for module in modules]
+
+@app.post("/module/add", response_model=ModulesResponse)
+def add_module(payload: AddModule, db: Session = Depends(get_db)):
+    device = db.execute(select(Device).where(Device.serial_number == payload.serial_number)).scalar_one_or_none()
+    if not device:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This device does not exist")
+    
+    module = Module(
+        servo_id = payload.servo_id,
+        pill_name = None,
+        dosage = None,
+        dose_times = None,
+        daily_qty = None,
+        notes = None,
+        status = "PENDING",
+        id_device = device.id_device
+    )
+
+    db.add(module)
+    db.commit()
+    db.refresh(module)
+
+    return {
+        "ok": True, 
+    }
+    
 

@@ -5,7 +5,7 @@ from datetime import datetime, time as dt_time
 
 from database import Base, engine, get_db
 from models import User, Module, Device
-from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData, PairDeviceWithUser, DevicePaired, ModulesResponse, ModuleOut, AddModule
+from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData, PairDeviceWithUser, DevicePaired, ModulesResponse, ModuleOut, AddModule, ModuleAdded
 from security import hash_password, verify_password, create_access_token
 
 import time as py_time
@@ -153,14 +153,20 @@ def get_all_modules(id_device: str, db: Session = Depends(get_db)):
         id_device=str(module.id_device)
     ) for module in modules]
 
-@app.post("/module/add", response_model=ModulesResponse)
+@app.post("/module/add", response_model=ModuleAdded)
 def add_module(payload: AddModule, db: Session = Depends(get_db)):
     device = db.execute(select(Device).where(Device.serial_number == payload.serial_number)).scalar_one_or_none()
     if not device:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This device does not exist")
-    
+
+    last_module_added = db.execute(select(Module).where(Module.id_device == device.id_device).order_by(Module.servo_id.desc()).limit(1)).scalar_one_or_none()
+    if not last_module_added:
+        new_servo_id = 2
+    else:
+        new_servo_id = last_module_added.servo_id + 1
+
     module = Module(
-        servo_id = payload.servo_id,
+        servo_id = new_servo_id,
         pill_name = None,
         dosage = None,
         dose_times = None,
@@ -175,7 +181,8 @@ def add_module(payload: AddModule, db: Session = Depends(get_db)):
     db.refresh(module)
 
     return {
-        "ok": True, 
+        "ok": True,
+        "servo_id": module.servo_id
     }
     
 

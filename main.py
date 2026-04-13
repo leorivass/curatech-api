@@ -153,8 +153,10 @@ def get_all_modules(id_device: str, db: Session = Depends(get_db)):
         id_device=str(module.id_device)
     ) for module in modules]
 
-@app.post("/module/add", response_model=ModuleAdded)
+@app.post("/module/add", response_model=ModuleAdded, status_code=200)
 def add_module(payload: AddModule, db: Session = Depends(get_db)):
+    new_servo_id = None;
+
     device = db.execute(select(Device).where(Device.serial_number == payload.serial_number)).scalar_one_or_none()
     if not device:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This device does not exist")

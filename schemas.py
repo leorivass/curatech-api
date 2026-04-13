@@ -67,7 +67,7 @@ class AddModule(BaseModel):
 
 class ModuleAdded(BaseModel):
     ok: bool
-    servo_id: str
+    servo_id: int
 
     
 

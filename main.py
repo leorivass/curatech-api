@@ -5,7 +5,7 @@ from datetime import datetime, time as dt_time
 
 from database import Base, engine, get_db
 from models import User, Module, Device
-from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData, PairDeviceWithUser, DevicePaired, ModulesResponse, ModuleOut, AddModule, ModuleAdded
+from schemas import RegisterRequest, LoginRequest, TokenResponse, UserPublic, ModuleDetected, UpdateModuleData, PairDeviceWithUser, DevicePaired, ModulesResponse, ModuleOut, AddModule, ModuleAdded, ModuleScheduleOut
 from security import hash_password, verify_password, create_access_token
 
 import time as py_time
@@ -186,5 +186,31 @@ def add_module(payload: AddModule, db: Session = Depends(get_db)):
         "ok": True,
         "servo_id": module.servo_id
     }
+
+@app.get("/device/schedule/{serial_number}", response_model=list[ModuleScheduleOut])
+def get_device_schedule(serial_number: str, db: Session = Depends(get_db)):
+    device = db.execute(
+        select(Device).where(Device.serial_number == serial_number)
+    ).scalar_one_or_none()
+
+    if not device:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
+
+    modules = db.execute(
+        select(Module).where(
+            Module.id_device == device.id_device,
+            Module.servo_id != None,     # evita PENDING sin servo_id
+            Module.dose_times != None    # evita módulos sin horas
+        )
+    ).scalars().all()
+
+    return [
+        ModuleScheduleOut(
+            servo_id=m.servo_id,
+            dose_times=[t.strftime("%H:%M:%S") for t in (m.dose_times or [])],
+            status=m.status
+        )
+        for m in modules
+    ]
     
 

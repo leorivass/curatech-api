@@ -69,5 +69,9 @@ class ModuleAdded(BaseModel):
     ok: bool
     servo_id: int
 
+class ModuleScheduleOut(BaseModel):
+    servo_id: int
+    dose_times: list[str]
+    status: str
     
 

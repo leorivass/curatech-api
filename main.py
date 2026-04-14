@@ -54,6 +54,8 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
     token = create_access_token(subject=str(user.id_user))
 
+    device = db.execute(select(Device).where(Device.id_user == user.id_user)).scalar_one_or_none()
+
     return TokenResponse(
         access_token=token,
         user=UserPublic(
@@ -65,6 +67,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             caregiver_name = user.caregiver_name,
             email = user.email
         ),
+        id_device=str(device.id_device) if device else None
     )
 
 @app.get("/module/detect", response_model=ModuleDetected)

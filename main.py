@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from datetime import datetime, time as dt_time
@@ -11,6 +12,13 @@ from security import hash_password, verify_password, create_access_token
 import time as py_time
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def parse_times(times: list[str]) -> list[dt_time]:
     return [dt_time.fromisoformat(t) for t in times]
